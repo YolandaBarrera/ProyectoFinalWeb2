@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Usuarios</title>
+
+  <!-- Google Icons + Materialize CSS -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
+
+  <!-- CSS -->
+  <link href="/styles.css" rel="stylesheet" />
+</head>
+<body>
+  <div class="container">
+
+    <!-- Barra superior con logo, título y botón de logout -->
+    <div class="topbar">
+      <div class="topbar-info">
+        <!-- Logo -->
+        <img src="/img/icon.png" alt="logo" class="topbar-logo">
+        <div>
+          <!-- Título del panel -->
+          <div class="topbar-title">Panel de Usuarios</div>
+          <!-- Información del usuario, inyectada desde el servidor -->
+          <div class="muted">Admin · Bienvenido <%= username || '' %></div>
+        </div>
+      </div>
+      <div>
+        <!-- Botón para cerrar sesión -->
+        <button id="logoutBtn" class="btn blue">Cerrar sesión</button>
+      </div>
+    </div>
+
+    <!-- Panel para agregar un nuevo usuario -->
+    <div class="panel">
+      <h4>Agregar Usuario</h4>
+
+      <!-- Formulario que envía datos al servidor vía POST -->
+      <form action="/add" method="POST" id="addFormServer">
+        <div class="row form-row">
+          <!-- Input de nombre -->
+          <div class="input-field col s4">
+            <input type="text" name="name" id="name" required />
+            <label for="name">Nombre</label>
+          </div>
+          <!-- Input de correo -->
+          <div class="input-field col s4">
+            <input type="email" name="email" id="email" required />
+            <label for="email">Correo</label>
+          </div>
+          <!-- Botón de agregar usuario -->
+          <div class="col s4 btn-col">
+            <button class="btn green" type="submit">Agregar</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Panel que muestra la lista de usuarios existentes -->
+    <div class="panel">
+      <h4 class="center">Lista de Usuarios</h4>
+      <table class="highlight centered">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Correo</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tbody">
+          <!-- Si hay usuarios en la lista -->
+          <% if (lista && lista.length) { %>
+            <% lista.forEach(u => { %>
+              <tr data-id="<%= u.id %>">
+                <td class="td-id"><%= u.id %></td>
+                <td class="td-nombre"><span class="text"><%= u.nombre %></span></td>
+                <td class="td-correo"><span class="text"><%= u.correo %></span></td>
+                <td class="td-actions">
+                  <!-- Botones para editar y eliminar usuario -->
+                  <button class="btn-small blue editBtn">Editar</button>
+                  <a href="/delete/<%= u.id %>" class="btn-small red deleteBtn" onclick="return confirm('¿Eliminar este usuario?');">Eliminar</a>
+                </td>
+              </tr>
+            <% }) %>
+          <% } else { %>
+            <!-- Si no hay usuarios -->
+            <tr><td colspan="4" class="center muted">No hay usuarios</td></tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- Materialize JS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+
+  <!-- Cliente: funcionalidades inline edit y logout -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+      // Cerrar sesión
+      const lb = document.getElementById('logoutBtn');
+      if (lb) lb.addEventListener('click', async (e) => {
+        e.preventDefault();
+
+        // Se hace una petición POST al endpoint de logout
+        await fetch('/api/logout', { method: 'POST' });
+
+        // Redirige al login después de cerrar sesión
+        window.location = '/login';
+      });
+
+      // Permite manejar clicks de editar/eliminar en todos los usuarios de forma dinámica
+      document.getElementById('tbody').addEventListener('click', async (e) => {
+        const tr = e.target.closest('tr');
+        if (!tr) return; // Si no hay fila, salir
+        const id = tr.dataset.id;
+
+        // Si se presiona el botón Editar
+        if (e.target.classList.contains('editBtn')) {
+          // Evita abrir múltiples ediciones al mismo tiempo
+          if (tr.classList.contains('editing')) return;
+          tr.classList.add('editing');
+
+          const nombreCell = tr.querySelector('.td-nombre');
+          const correoCell = tr.querySelector('.td-correo');
+          const actionsCell = tr.querySelector('.td-actions');
+
+          const currentName = nombreCell.textContent.trim();
+          const currentEmail = correoCell.textContent.trim();
+
+          // Convierte los campos en inputs para edición inline
+          nombreCell.innerHTML = '<input class="input-inline" name="name" value="'+escapeHtml(currentName)+'">';
+          correoCell.innerHTML = '<input class="input-inline" name="email" value="'+escapeHtml(currentEmail)+'">';
+
+          // Oculta botones de editar/eliminar
+          actionsCell.querySelectorAll('a, button').forEach(x => x.style.display = 'none');
+
+          // Crea botones de guardar y cancelar
+          const saveBtn = document.createElement('button');
+          saveBtn.className = 'btn-small green';
+          saveBtn.innerText = 'Guardar';
+          const cancelBtn = document.createElement('button');
+          cancelBtn.className = 'btn-small grey';
+          cancelBtn.innerText = 'Cancelar';
+
+          actionsCell.appendChild(saveBtn);
+          actionsCell.appendChild(cancelBtn);
+
+          // Cancelar edición
+          cancelBtn.addEventListener('click', (ev) => {
+            ev.preventDefault();
+            nombreCell.innerHTML = '<span class="text">'+escapeHtml(currentName)+'</span>';
+            correoCell.innerHTML = '<span class="text">'+escapeHtml(currentEmail)+'</span>';
+            saveBtn.remove(); cancelBtn.remove();
+            actionsCell.querySelectorAll('a, button').forEach(x => x.style.display = '');
+            tr.classList.remove('editing');
+          });
+
+          // Guardar cambios
+          saveBtn.addEventListener('click', async (ev) => {
+            ev.preventDefault();
+            const name = nombreCell.querySelector('input').value.trim();
+            const email = correoCell.querySelector('input').value.trim();
+            if (!name || !email) { alert('Campos requeridos'); return; }
+
+            try {
+              const res = await fetch('/update/' + id, {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({ name, email })
+              });
+              if (res.ok) {
+                // Actualiza la fila con los nuevos datos
+                nombreCell.innerHTML = '<span class="text">'+escapeHtml(name)+'</span>';
+                correoCell.innerHTML = '<span class="text">'+escapeHtml(email)+'</span>';
+                saveBtn.remove(); cancelBtn.remove();
+                actionsCell.querySelectorAll('a, button').forEach(x => x.style.display = '');
+                tr.classList.remove('editing');
+              } else throw new Error('Error al guardar');
+            } catch (err) {
+              console.error(err);
+              alert('Error al guardar');
+            }
+          });
+        }
+      });
+    });
+
+    // Función de seguridad para caracteres HTML
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g,'&amp;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;');
+    }
+  </script>
+</body>
+</html>
