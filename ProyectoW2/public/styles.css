@@ -1,0 +1,191 @@
+/* Tipografía */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+:root{
+  --bg: #f7fafc;
+  --card: #ffffff;
+  --muted: #6b7280;
+  --accent: #6C8EF5; /* azul suave */
+  --accent-2: #8FE3C8; /* verde agua */
+  --danger: #ff7a7a;
+  --success: #4CAF50;
+  --glass: rgba(255,255,255,0.6);
+  --shadow: 0 6px 18px rgba(29,41,61,0.06);
+  --radius: 12px;
+}
+
+*{box-sizing:border-box}
+html, body {
+    height: 100%;
+    margin: 0;
+    font-family: "Inter", "Roboto", sans-serif;
+    background: #e7f3ff !important; /* azul claro */
+    color:#102a43;
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+}
+
+/* Navegación */
+.nav-wrapper{ background: transparent !important; }
+nav.container{ padding: 0 12px; }
+.brand-logo{
+  font-weight:700;
+  color:var(--accent);
+  font-size:1.25rem;
+}
+
+/* barra superior */
+.topbar {
+  background: var(--card);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  padding: 14px;
+  margin: 18px 0;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+
+/* contenedor */
+.container {
+  max-width:1100px;
+  margin: 18px auto;
+}
+
+/* tarjeta para formularios y listas */
+.panel {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 18px;
+  margin-bottom: 18px;
+}
+
+/* formularios */
+.input-field input[type="text"],
+.input-field input[type="email"],
+.input-field input[type="password"]{
+  width:100%;
+  padding:10px 12px;
+  border:1px solid #e6eef6;
+  border-radius:10px;
+  background: linear-gradient(180deg, #ffffff, #fbfbff);
+  outline:none;
+  transition: box-shadow .12s, border-color .12s;
+}
+.input-field input:focus{
+  border-color: var(--accent);
+  box-shadow: 0 6px 20px rgba(108,142,245,0.12);
+}
+
+/* encabezados */
+h4{ margin:0 0 12px 0; font-weight:600; color:#0f1724; }
+
+/* botones */
+.btn {
+  border-radius: 10px;
+  padding: 8px 14px;
+  text-transform:none;
+  font-weight:600;
+  box-shadow: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+.btn.green { background: linear-gradient(90deg,var(--accent-2), #57d1a6); color:#063; }
+.btn.blue { background: linear-gradient(90deg,var(--accent), #5186f6); color:white; }
+.btn.red { background: linear-gradient(90deg,#ff8a8a, #ff6b6b); color:white; }
+
+/* botones pequeños */
+.btn-small { padding:6px 8px; border-radius:8px; font-size:0.85rem; display: flex; justify-content: center; align-items: center; text-align: center; }
+
+/* tablas */
+table.highlight {
+  width:100%;
+  border-collapse: collapse;
+  background: transparent;
+}
+table thead th {
+  text-align:left;
+  padding:12px 12px;
+  color:var(--muted);
+  font-weight:600;
+  font-size:0.9rem;
+  border-bottom:1px solid #eef3f8;
+}
+table tbody td {
+  padding:12px;
+  vertical-align:middle;
+  border-bottom:1px solid #f1f6fa;
+  font-size:0.95rem;
+  color:#123;
+}
+
+table tbody tr:hover{
+  background: linear-gradient(90deg, rgba(108,142,245,0.03), rgba(143,227,200,0.02));
+}
+
+/* controles de edición*/
+.td-actions { display:flex; gap:8px; align-items:center; }
+.input-inline {
+  padding:8px 10px;
+  border-radius:8px;
+  border:1px solid #e8f0fb;
+}
+
+/* responsive */
+@media (max-width: 880px){
+  .topbar{ flex-direction:column; gap:10px; align-items:flex-start; }
+  .input-field.col.s4 { width:100%; margin-bottom:10px; }
+  .col.s4 { width:100% !important; }
+}
+
+/* utilidades */
+.center { text-align:center; }
+.muted { color:var(--muted); font-size:0.9rem; }
+
+/* toast pequeño */
+.toast {
+  padding:10px 14px;
+  border-radius:8px;
+  background: #1f2937;
+  color:white;
+}
+
+/* reset de enlaces */
+a { text-decoration:none; }
+
+/* separación horizontal entre inputs del formulario */
+.form-row {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+}
+
+.form-row .input-field.col.s4 {
+    flex: 1 1 0;
+    min-width: 0;
+    margin: 0;
+    padding-bottom: 0;
+}
+
+.form-row .col.s4.btn-col {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    padding-bottom: 0;
+    margin-bottom: 0;
+}
+
+.form-row .col.s4.btn-col .btn {
+    margin-top: 6px;
+}
+
+/* mover botones de acciones a la derecha */
+table tbody td.td-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
