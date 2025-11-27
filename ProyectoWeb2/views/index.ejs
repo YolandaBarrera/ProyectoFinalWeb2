@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Usuarios</title>
+
+  <!-- Google Icons y CSS de Materialize -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
+  <link href="/styles.css" rel="stylesheet" />
+</head>
+<body>
+  <div class="container">
+
+    <!-- Topbar: logo, título, botón de logout -->
+    <div class="topbar">
+      <div style="display:flex; gap:12px; align-items:center;">
+        <!-- Logo -->
+        <img src="/img/icon.png" alt="logo" style="width:44px; height:44px; border-radius:8px; object-fit:cover;">
+        <div>
+          <div style="font-weight:700; font-size:1.05rem; color:#0b2b4a">Panel de Usuarios</div>
+          <!-- Bienvenida con el nombre del usuario: si existe `username`, lo muestra -->
+          <div class="muted">Admin · Bienvenido <%= username || '' %></div>
+        </div>
+      </div>
+      <div>
+        <button id="logoutBtn" class="btn blue">Cerrar sesión</button>
+      </div>
+    </div>
+
+    <!-- Panel para agregar un nuevo usuario (formulario que hace POST a /add) -->
+    <div class="panel">
+      <h4>Agregar Usuario</h4>
+
+      <!-- Form que apunta al servidor -->
+      <!-- id sirve para seleccionarlo desde el JavaScript -->
+      <form action="/add" method="POST" id="addFormServer">
+        <div class="row form-row" style="margin-bottom:0;">
+          <!-- Campo Nombre -->
+          <div class="input-field col s4">
+            <input type="text" name="name" id="name" required />
+            <label for="name">Nombre</label>
+          </div>
+          <!-- Campo Correo -->
+          <div class="input-field col s4">
+            <input type="email" name="email" id="email" required />
+            <label for="email">Correo</label>
+          </div>
+          <!-- Botón Agregar, envía el formulario al servidor -->
+          <div class="col s4 btn-col">
+            <button class="btn green" type="submit">Agregar</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Panel con la tabla de usuarios "tabla: vista" -->
+    <div class="panel">
+      <h4 class="center">Lista de Usuarios</h4>
+
+      <table class="highlight centered">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Correo</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+
+        <!-- Cuerpo de la tabla -->
+        <tbody id="tbody">
+          <% if (lista && lista.length) { %>
+            <% lista.forEach(u => { %>
+              <!-- Cada fila contiene data-id para identificar el registro en acciones JS -->
+              <tr data-id="<%= u.id %>">
+                <td class="td-id"><%= u.id %></td>
+
+                <!-- Nombre y correo, se muestran dentro de <span class="text"> para estilos en css -->
+                <td class="td-nombre"><span class="text"><%= u.nombre %></span></td>
+                <td class="td-correo"><span class="text"><%= u.correo %></span></td>
+
+                <!-- Acciones: editar y eliminar (link al servidor) -->
+                <td class="td-actions">
+                  <!-- Botón editar, convertirá las celdas a inputs -->
+                  <button class="btn-small blue editBtn">Editar</button>
+
+                  <!-- Para eliminar, realiza GET a /delete/:id  -->
+                  <a href="/delete/<%= u.id %>" class="btn-small red deleteBtn"
+                     onclick="return confirm('¿Eliminar este usuario?');">
+                    Eliminar
+                  </a>
+                </td>
+              </tr>
+            <% }) %>
+          <% } else { %>
+            <!-- Mensaje cuando no hay usuarios -->
+            <tr><td colspan="4" class="center muted">No hay usuarios</td></tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Materialize -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+
+  <script>
+     // Espera a que el contenido del documento HTML esté completamente cargado.
+    document.addEventListener('DOMContentLoaded', () => {
+
+      // ===== LOGOUT =====
+
+    // Obtiene el botón de "Cerrar sesión" a través de su id="logoutBtn".
+    // Si existe en la página, se guardará en la variable 'lb'.
+    // Si no existe, 'lb' será null.
+      const lb = document.getElementById('logoutBtn');
+      if (lb) {
+        lb.addEventListener('click', async (e) => {
+          e.preventDefault(); //evita que recargue la página
+        // Petición al servidor para cerrar la sesión.
+        // Llama al endpoint POST /api/logout.
+        // En el servidor, este endpoint debe destruir la sesión del usuario.
+          await fetch('/api/logout', { method: 'POST' });
+          // Redirige al login 
+          window.location = '/login';
+        });
+      }
+
+      // ===== EDIT/DELETE EN LA TABLA =====
+      // Escucha clicks en el tbody para manejar botones dinámicos
+      document.getElementById('tbody').addEventListener('click', async (e) => {
+        const tr = e.target.closest('tr'); // fila más cercana
+        if (!tr) return; // si no se hizo click sobre una fila, salir
+        const id = tr.dataset.id; // id del usuario en data-id
+
+        // Si se hizo click en el botón EDITAR:
+        if (e.target.classList.contains('editBtn')) {
+
+          // Si ya está en modo edición, no volver a activarlo
+          if (tr.classList.contains('editing')) return;
+          tr.classList.add('editing'); // marca la fila como en edición
+
+          // Celdas que vamos a transformar en inputs
+          const nombreCell = tr.querySelector('.td-nombre');
+          const correoCell = tr.querySelector('.td-correo');
+          const actionsCell = tr.querySelector('.td-actions');
+
+          // Valores actuales para volver a mostrarlos si el usuario cancela
+          const currentName = nombreCell.textContent.trim();
+          const currentEmail = correoCell.textContent.trim();
+
+          // Reemplaza el contenido por inputs inline con los valores actuales
+          nombreCell.innerHTML = '<input class="input-inline" name="name" value="'+escapeHtml(currentName)+'">';
+          correoCell.innerHTML = '<input class="input-inline" name="email" value="'+escapeHtml(currentEmail)+'">';
+
+          // Oculta los botones originales (Editar / Eliminar)
+          actionsCell.querySelectorAll('a, button').forEach(x => x.style.display = 'none');
+
+          // Crea botones Guardar y Cancelar
+          const saveBtn = document.createElement('button');
+          saveBtn.className = 'btn-small green';
+          saveBtn.innerText = 'Guardar';
+
+          const cancelBtn = document.createElement('button');
+          cancelBtn.className = 'btn-small grey';
+          cancelBtn.innerText = 'Cancelar';
+
+          // Añade los botones al DOM
+          actionsCell.appendChild(saveBtn);
+          actionsCell.appendChild(cancelBtn);
+
+          // ===== Cancelar edición =====
+          cancelBtn.addEventListener('click', (ev) => {
+            ev.preventDefault();
+            // Restaurar contenido original
+            nombreCell.innerHTML = '<span class="text">'+escapeHtml(currentName)+'</span>';
+            correoCell.innerHTML = '<span class="text">'+escapeHtml(currentEmail)+'</span>';
+
+            // Quitar botones temporales y mostrar los originales
+            saveBtn.remove();
+            cancelBtn.remove();
+            actionsCell.querySelectorAll('a, button').forEach(x => x.style.display = '');
+
+            // Quitar la clase editing
+            tr.classList.remove('editing');
+          });
+
+          // ===== Guardar cambios (envío al servidor) =====
+          saveBtn.addEventListener('click', async (ev) => {
+            ev.preventDefault();
+
+            // Lectura de los nuevos valores desde los inputs
+            const name = nombreCell.querySelector('input').value.trim();
+            const email = correoCell.querySelector('input').value.trim();
+
+            // Validación mínima en cliente
+            if (!name || !email) {
+              if (window.M && M.toast) M.toast({html:'Campos requeridos'});
+              else alert('Campos requeridos');
+              return;
+            }
+
+            try {
+              // Envío POST a /update/:id con JSON { name, email }
+              const res = await fetch('/update/' + id, {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({ name, email })
+              });
+
+              // Intentamos obtener JSON (si el servidor responde JSON)
+              const data = await (res.json ? res.json() : Promise.resolve(null));
+              if (res.ok && (data === null || data.ok === true || res.status === 200)) {
+                // Actualizar con los nuevos valores
+                nombreCell.innerHTML = '<span class="text">'+escapeHtml(name)+'</span>';
+                correoCell.innerHTML = '<span class="text">'+escapeHtml(email)+'</span>';
+                // Limpiar botones temporales y reactivar los originales
+                saveBtn.remove();
+                cancelBtn.remove();
+                actionsCell.querySelectorAll('a, button').forEach(x => x.style.display = '');
+                tr.classList.remove('editing');
+              } else {
+                // Si falla, lanzar error para mostrar toast (alerta)
+                throw new Error((data && data.message) || 'Error al guardar');
+              }
+            } catch (err) {
+              console.error(err);
+              if (window.M && M.toast) M.toast({html:'Error al guardar'});
+              else alert('Error al guardar');
+            }
+          });
+        }
+
+      });
+    });
+
+    // Función auxiliar para evitar inyección HTML 
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g,'&amp;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;');
+    }
+  </script>
+</body>
+</html>

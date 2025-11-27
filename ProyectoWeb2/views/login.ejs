@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login</title>
+  <!-- Íconos de Google (para Materialize) -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <!-- Framework CSS Materialize para estilos básicos y formularios -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
+  <link href="/styles.css" rel="stylesheet" />
+</head>
+
+<body class="login-layout">
+  <div class="login-wrapper">
+    <div class="login-left">
+      <div class="login-left-content">
+        <h2>¡Bienvenido!</h2>
+        <p>Ingrese sus datos personales para utilizar todas las funciones del sitio</p>
+      </div>
+    </div>
+
+    <div class="login-right">
+      <div class="login-card">
+        <h4>Iniciar sesión</h4>
+        <p class="muted">Ingresa con tu usuario y contraseña</p>
+
+        <!-- FORMULARIO DE LOGIN -->
+        <form id="formLogin">
+          <!-- Campo de Usuario -->
+          <div class="input-field">
+            <input type="text" name="username" id="username" required />
+            <label for="username">Usuario</label>
+          </div>
+          <!-- Campo de Contraseña -->
+          <div class="input-field">
+            <input type="password" name="password" id="password" required />
+            <label for="password">Contraseña</label>
+          </div>
+          <!-- Botón de Acceder -->
+          <div class="center" style="margin-top:8px;">
+            <button class="btn blue" type="submit">Acceder</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Script de Materialize  -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+
+  <!-- SCRIPT DE LOGIN (envío del formulario vía fetch) -->
+  <script>
+    // Escucha el evento submit del formulario
+    document.getElementById('formLogin').addEventListener('submit', async (e) => {
+      
+      e.preventDefault(); // Evita recargar la página
+
+      // Obtiene los valores de los inputs
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+
+      // Envía los datos al backend usando fetch
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+
+      // Convierte la respuesta a JSON
+      const data = await res.json();
+
+      // Si ok = true  redirige al dashboard
+      if (data.ok) {
+        window.location = '/';
+      } 
+      // Si ok = false  muestra un mensaje Error
+      else {
+        M.toast({ html: data.message || 'Error' });
+      }
+    });
+  </script>
+
+</body>
+</html>
